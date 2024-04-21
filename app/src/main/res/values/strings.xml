@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name" translatable="false">GVA</string>
+    <string name="title_home">Логин</string>
+    <string name="title_dashboard">Микрофон</string>
+    <string name="title_notifications">Настройки</string>
+    <string name="microphone">Click to speak</string>>
+</resources>

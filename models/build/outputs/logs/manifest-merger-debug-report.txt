@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /home/d3dyvka/Загрузки/GVA2/models/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest4076576936132218487.xml:2:13-83
+INJECTED from /home/d3dyvka/Загрузки/GVA2/models/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest4076576936132218487.xml:2:13-83
+	package
+		INJECTED from /home/d3dyvka/Загрузки/GVA2/models/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest4076576936132218487.xml
+	xmlns:android
+		ADDED from /home/d3dyvka/Загрузки/GVA2/models/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest4076576936132218487.xml:2:23-81
+uses-sdk
+INJECTED from /home/d3dyvka/Загрузки/GVA2/models/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest4076576936132218487.xml reason: use-sdk injection requested
+INJECTED from /home/d3dyvka/Загрузки/GVA2/models/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest4076576936132218487.xml
+INJECTED from /home/d3dyvka/Загрузки/GVA2/models/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest4076576936132218487.xml
+	android:targetSdkVersion
+		INJECTED from /home/d3dyvka/Загрузки/GVA2/models/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest4076576936132218487.xml
+	android:minSdkVersion
+		INJECTED from /home/d3dyvka/Загрузки/GVA2/models/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest4076576936132218487.xml
