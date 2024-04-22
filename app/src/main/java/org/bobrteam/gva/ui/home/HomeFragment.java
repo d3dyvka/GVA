@@ -4,9 +4,11 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +16,7 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -41,23 +44,16 @@ public class HomeFragment extends Fragment implements RecognitionListener {
     private ImageButton microphoneButton;
     private boolean isRecording = false;
 
-    private static String loadJSON(Context context) {
-        String json;
-        try (InputStream is = context.getAssets().open("numbers.json")) {
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            int bytesRead = is.read(buffer);
-            if (bytesRead == -1) {
-                // Обработка ошибки чтения, если нужно
-                return null;
-            }
-            json = new String(buffer, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            return null;
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        int permissionCheck = ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO);
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
+        } else {
+            initModel();
         }
-        return json;
     }
-
 
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -72,13 +68,6 @@ public class HomeFragment extends Fragment implements RecognitionListener {
                 throw new RuntimeException(e);
             }
         });
-
-        int permissionCheck = ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO);
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSIONS_REQUEST_RECORD_AUDIO);
-        } else {
-            initModel();
-        }
 
         return root;
     }
@@ -129,43 +118,30 @@ public class HomeFragment extends Fragment implements RecognitionListener {
             JSONObject json = new JSONObject(hypothesis);
             String recognizedText = json.optString("text", "");
             showToast(recognizedText);
-            switch (recognizedText) {
-                case "набери номер один": {
-                    String phone = loadPhone("один");
-                    dialPhoneNumber(phone);
-                    break;
-                }
-                case "набери номер два": {
-                    String phone = loadPhone("два");
-                    dialPhoneNumber(phone);
-                    break;
-                }
-                case "набери номер три": {
-                    String phone = loadPhone("три");
-                    dialPhoneNumber(phone);
-                    break;
-                }
-                case "набери номер четыре": {
-                    String phone = loadPhone("четыре");
-                    dialPhoneNumber(phone);
-                    break;
-                }
-                case "набери номер пять": {
-                    String phone = loadPhone("пять");
-                    dialPhoneNumber(phone);
-                    break;
-                }
+            if (recognizedText.equals("набери номер один")) {
+                String phone = loadPhone("один");
+                playDialSound(R.raw.n1, phone);
+            } else if (recognizedText.equals("набери номер два")) {
+                String phone = loadPhone("два");
+                playDialSound(R.raw.n2, phone);
+            } else if (recognizedText.equals("набери номер три")) {
+                String phone = loadPhone("три");
+                playDialSound(R.raw.n3, phone);
+            } else if (recognizedText.equals("набери номер четыре")) {
+                String phone = loadPhone("четыре");
+                playDialSound(R.raw.n4, phone);
+            } else if (recognizedText.equals("набери номер пять")) {
+                String phone = loadPhone("пять");
+                playDialSound(R.raw.n5, phone);
             }
-        } catch (JSONException e) {
-            setErrorState("Error parsing JSON: " + e.getMessage());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (JSONException | IOException e) {
+            setErrorState("Error processing result: " + e.getMessage());
         }
     }
 
     @Override
     public void onFinalResult(String hypothesis) {
-        // Обработка окончательных результатов
+        // Handle final result if needed
     }
 
     @Override
@@ -175,7 +151,7 @@ public class HomeFragment extends Fragment implements RecognitionListener {
 
     @Override
     public void onTimeout() {
-        // Обработка таймаута
+        // Handle timeout if needed
     }
 
     private void setErrorState(String message) {
@@ -183,7 +159,6 @@ public class HomeFragment extends Fragment implements RecognitionListener {
     }
 
     private void vibrate() {
-        getContext();
         Vibrator vibrator = (Vibrator) requireContext().getSystemService(Context.VIBRATOR_SERVICE);
         if (vibrator != null) {
             vibrator.vibrate(50);
@@ -208,7 +183,6 @@ public class HomeFragment extends Fragment implements RecognitionListener {
         String result = "";
 
         String jsonData = loadJSON(requireContext());
-        assert jsonData != null;
         JSONObject jsonObject = new JSONObject(jsonData);
         JSONArray hospitals = jsonObject.getJSONArray("hospitals");
 
@@ -232,5 +206,32 @@ public class HomeFragment extends Fragment implements RecognitionListener {
                 Toast.makeText(requireContext(), "Permission denied", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private void playDialSound(int soundResourceId, String phoneNumber) {
+        MediaPlayer mediaPlayer = MediaPlayer.create(requireContext(), soundResourceId);
+        if (mediaPlayer != null) {
+            mediaPlayer.setOnCompletionListener(mp -> dialPhoneNumber(phoneNumber));
+            mediaPlayer.start();
+        } else {
+            Log.e("MediaPlayer", "Failed to initialize MediaPlayer");
+        }
+    }
+
+    private static String loadJSON(Context context) {
+        String json;
+        try (InputStream is = context.getAssets().open("numbers.json")) {
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            int bytesRead = is.read(buffer);
+            if (bytesRead == -1) {
+                // Handle read error if necessary
+                return null;
+            }
+            json = new String(buffer, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return null;
+        }
+        return json;
     }
 }
