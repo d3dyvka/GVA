@@ -117,7 +117,6 @@ public class HomeFragment extends Fragment implements RecognitionListener {
         try {
             JSONObject json = new JSONObject(hypothesis);
             String recognizedText = json.optString("text", "");
-            showToast(recognizedText);
             if (recognizedText.equals("набери номер один")) {
                 String phone = loadPhone("один");
                 playDialSound(R.raw.n1, phone);
@@ -125,19 +124,29 @@ public class HomeFragment extends Fragment implements RecognitionListener {
                 String phone = loadPhone("два");
                 playDialSound(R.raw.n2, phone);
             } else if (recognizedText.equals("набери номер три")) {
-                String phone = loadPhone("три");
+                String phone = loadPhone("РЖД-Медицина Клиническая больница");
                 playDialSound(R.raw.n3, phone);
             } else if (recognizedText.equals("набери номер четыре")) {
-                String phone = loadPhone("четыре");
+                String phone = loadPhone("Новосибирская областная больница");
                 playDialSound(R.raw.n4, phone);
             } else if (recognizedText.equals("набери номер пять")) {
-                String phone = loadPhone("пять");
+                String phone = loadPhone("Городская клиническая больница №11");
                 playDialSound(R.raw.n5, phone);
+            } else if(recognizedText.equals("набери номер шесть")){
+                String phone = loadPhone("Городская клиническая поликлиника №13");
+                playDialSound(R.raw.n5, phone);
+            } else if(recognizedText.equals("набери номер для записи")){
+                String phone = loadPhone("Единый номер для записи");
+                playDialSound(R.raw.n5, phone);
+            } else{
+                MediaPlayer mediaPlayer = MediaPlayer.create(requireContext(), R.raw.notrec);
+                mediaPlayer.start();
             }
         } catch (JSONException | IOException e) {
             setErrorState("Error processing result: " + e.getMessage());
         }
     }
+
 
     @Override
     public void onFinalResult(String hypothesis) {
