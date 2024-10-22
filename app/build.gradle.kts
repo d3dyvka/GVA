@@ -41,6 +41,7 @@ dependencies {
 
     implementation("com.alphacephei:vosk-android:0.3.47@aar")
     implementation("net.java.dev.jna:jna:5.13.0@aar")
+    implementation("org.jsoup:jsoup:1.18.1")
     implementation(project(":models"))
     implementation(libs.appcompat)
     implementation(libs.material)

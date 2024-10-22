@@ -6,8 +6,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,6 +36,8 @@ import org.vosk.android.StorageService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Locale;
 
 public class HomeFragment extends Fragment implements RecognitionListener {
 
@@ -43,6 +47,7 @@ public class HomeFragment extends Fragment implements RecognitionListener {
     private SpeechService speechService;
     private ImageButton microphoneButton;
     private boolean isRecording = false;
+    private TextToSpeech textToSpeech; // Добавлено для синтезатора речи
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -53,10 +58,23 @@ public class HomeFragment extends Fragment implements RecognitionListener {
         } else {
             initModel();
         }
+        initTextToSpeech(); // Инициализация синтезатора речи
     }
 
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    private void initTextToSpeech() {
+        textToSpeech = new TextToSpeech(requireContext(), status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                int result = textToSpeech.setLanguage(Locale.US);
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.e("TTS", "Language not supported");
+                }
+            } else {
+                Log.e("TTS", "Initialization failed");
+            }
+        });
+    }
+
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
 
         microphoneButton = root.findViewById(R.id.recognize_mic);
@@ -73,12 +91,10 @@ public class HomeFragment extends Fragment implements RecognitionListener {
     }
 
     private void initModel() {
-        StorageService.unpack(requireContext(), "vosk-model-small-ru-0.22", "model",
-                (model) -> {
-                    this.model = model;
-                    showToast("Model loaded successfully");
-                },
-                (exception) -> setErrorState("Failed to unpack the model" + exception.getMessage()));
+        StorageService.unpack(requireContext(), "vosk-model-small-ru-0.22", "model", (model) -> {
+            this.model = model;
+            showToast("Model loaded successfully");
+        }, (exception) -> setErrorState("Failed to unpack the model" + exception.getMessage()));
     }
 
     private void toggleRecording() {
@@ -120,33 +136,43 @@ public class HomeFragment extends Fragment implements RecognitionListener {
             if (recognizedText.equals("набери номер один")) {
                 String phone = loadPhone("один");
                 playDialSound(R.raw.calling, phone);
+                //speak("Набираю номер один: " + phone); // Озвучка
             } else if (recognizedText.equals("набери номер два")) {
                 String phone = loadPhone("два");
                 playDialSound(R.raw.call, phone);
+                //speak("Набираю номер два: " + phone); // Озвучка
             } else if (recognizedText.equals("набери номер три")) {
                 String phone = loadPhone("РЖД-Медицина Клиническая больница");
                 playDialSound(R.raw.ringing, phone);
+                //speak("Набираю номер три: " + phone); // Озвучка
             } else if (recognizedText.equals("набери номер четыре")) {
                 String phone = loadPhone("Новосибирская областная больница");
                 playDialSound(R.raw.call, phone);
+                //speak("Набираю номер четыре: " + phone); // Озвучка
             } else if (recognizedText.equals("набери номер пять")) {
                 String phone = loadPhone("Городская клиническая больница №11");
                 playDialSound(R.raw.ringing, phone);
-            } else if(recognizedText.equals("набери номер шесть")){
+                //speak("Набираю номер пять: " + phone); // Озвучка
+            } else if (recognizedText.equals("набери номер шесть")) {
                 String phone = loadPhone("Городская клиническая поликлиника №13");
                 playDialSound(R.raw.calling, phone);
-            } else if(recognizedText.equals("набери номер для записи")){
+                //speak("Набираю номер шесть: " + phone); // Озвучка
+            } else if (recognizedText.equals("набери номер для записи")) {
                 String phone = loadPhone("Единый номер для записи");
                 playDialSound(R.raw.ringing, phone);
-            } else{
+                //speak("Набираю номер для записи: " + phone); // Озвучка
+            } else if (recognizedText.equals("концерты на завтра")) {
+                // Получение и вывод концертов на завтра в фоновом потоке
+                new FetchConcertsTask().execute();
+            } else {
                 MediaPlayer mediaPlayer = MediaPlayer.create(requireContext(), R.raw.cwtr);
                 mediaPlayer.start();
+                //speak("Неизвестная команда"); // Озвучка
             }
         } catch (JSONException | IOException e) {
             setErrorState("Error processing result: " + e.getMessage());
         }
     }
-
 
     @Override
     public void onFinalResult(String hypothesis) {
@@ -190,7 +216,6 @@ public class HomeFragment extends Fragment implements RecognitionListener {
 
     private String loadPhone(String hospitalName) throws IOException, JSONException {
         String result = "";
-
         String jsonData = loadJSON(requireContext());
         JSONObject jsonObject = new JSONObject(jsonData);
         JSONArray hospitals = jsonObject.getJSONArray("hospitals");
@@ -234,7 +259,6 @@ public class HomeFragment extends Fragment implements RecognitionListener {
             byte[] buffer = new byte[size];
             int bytesRead = is.read(buffer);
             if (bytesRead == -1) {
-                // Handle read error if necessary
                 return null;
             }
             json = new String(buffer, StandardCharsets.UTF_8);
@@ -242,5 +266,47 @@ public class HomeFragment extends Fragment implements RecognitionListener {
             return null;
         }
         return json;
+    }
+
+    private void speak(String text) {
+        if (textToSpeech != null) {
+            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (textToSpeech != null) {
+            textToSpeech.shutdown(); // Освобождение ресурсов синтезатора речи
+        }
+    }
+
+    // Асинхронная задача для получения концертов
+    private class FetchConcertsTask extends AsyncTask<Void, Void, List<Parse.Concert>> {
+        @Override
+        protected List<Parse.Concert> doInBackground(Void... voids) {
+            Parse parse = new Parse();
+            try {
+                return parse.getConcerts(); // Парсим концерты
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        protected void onPostExecute(List<Parse.Concert> concerts) {
+            if (concerts.isEmpty()) {
+                showToast("Концертов на завтра не найдено");
+                speak("Концертов на завтра не найдено"); // Озвучка
+            } else {
+                StringBuilder concertInfo = new StringBuilder("Концерты на завтра:\n");
+                for (Parse.Concert concert : concerts) {
+                    concertInfo.append(concert.toString()).append("\n");
+                }
+                showToast(concertInfo.toString()); // Вывод информации о концертах
+                speak(concertInfo.toString()); // Озвучка информации о концертах
+            }
+        }
     }
 }
